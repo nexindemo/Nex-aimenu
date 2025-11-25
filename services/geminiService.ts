@@ -20,10 +20,48 @@ const RATE_LIMIT_DELAY_MS = 5000;
 const BACKOFF_DELAY_MS = 20000;
 const MAX_RETRIES = 3;
 
+/**
+ * Safely retrieves the API key from various environment variable sources.
+ * Prevents "process is not defined" crashes in browser environments (Vite/Netlify).
+ */
+const getApiKey = (): string => {
+  try {
+    // Check for standard Node.js process.env (Create React App, etc.)
+    if (typeof process !== 'undefined' && process.env?.API_KEY) {
+      return process.env.API_KEY;
+    }
+  } catch (e) {
+    // Ignore ReferenceError if process is not defined
+  }
+
+  try {
+    // Check for Vite environment variables
+    // @ts-ignore
+    if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_KEY) {
+      // @ts-ignore
+      return import.meta.env.VITE_API_KEY;
+    }
+     // @ts-ignore
+    if (typeof import.meta !== 'undefined' && import.meta.env?.API_KEY) {
+      // @ts-ignore
+      return import.meta.env.API_KEY;
+    }
+  } catch (e) {
+    // Ignore errors
+  }
+  
+  return '';
+};
+
 export const initializeChat = (): Chat => {
   if (chatSession) return chatSession;
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    console.error("API Key is missing. Please check your environment variables (API_KEY or VITE_API_KEY).");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   chatSession = ai.chats.create({
     model: 'gemini-2.5-flash',
     config: {
@@ -80,7 +118,8 @@ const processQueue = async () => {
     }
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const apiKey = getApiKey();
+      const ai = new GoogleGenAI({ apiKey });
       
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
