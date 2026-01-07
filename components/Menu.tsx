@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { Category, DietType, Dish } from '../types';
 import { MENU_ITEMS } from '../constants';
@@ -8,16 +9,20 @@ interface MenuProps {
   onOpenChat: () => void;
 }
 
-// Sub-component to handle individual card logic and image generation
 const MenuCard: React.FC<{ item: Dish; onAdd: (dish: Dish) => void }> = ({ item, onAdd }) => {
   const [imgSrc, setImgSrc] = useState(item.image);
   const [isGenerated, setIsGenerated] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
     
     const fetchImage = async () => {
-      // Trigger generation
+      // If we have a Drive link or Unsplash link, use it directly.
+      if (item.image && (item.image.includes('drive.google.com') || item.image.includes('images.unsplash.com'))) {
+        return;
+      }
+      
       const generatedUrl = await generateDishImage(item.name, item.description);
       if (isMounted && generatedUrl) {
         setImgSrc(generatedUrl);
@@ -25,11 +30,10 @@ const MenuCard: React.FC<{ item: Dish; onAdd: (dish: Dish) => void }> = ({ item,
       }
     };
 
-    // Start generation (lazy loading could be implemented here, but we'll fetch on mount)
     fetchImage();
 
     return () => { isMounted = false; };
-  }, [item.name, item.description]);
+  }, [item.name, item.description, item.image]);
 
   const VegIcon = () => (
     <div className="w-4 h-4 border border-green-600 p-0.5 flex items-center justify-center">
@@ -44,15 +48,26 @@ const MenuCard: React.FC<{ item: Dish; onAdd: (dish: Dish) => void }> = ({ item,
   );
 
   return (
-    <div className="bg-white rounded-[20px] shadow-[0_2px_10px_rgba(0,0,0,0.06)] overflow-hidden flex flex-col hover:shadow-lg transition-shadow duration-300">
-      {/* Image Section */}
-      <div className="relative h-40 sm:h-48 w-full bg-gray-100 group">
+    <div className="bg-white rounded-[20px] shadow-[0_2px_10px_rgba(0,0,0,0.06)] overflow-hidden flex flex-col hover:shadow-lg transition-all duration-300">
+      <div className="relative h-40 sm:h-48 w-full bg-gray-100 group overflow-hidden">
+        <div className={`absolute inset-0 bg-gray-200 animate-pulse transition-opacity duration-300 ${imageLoaded ? 'opacity-0' : 'opacity-100'}`} />
         <img 
           src={imgSrc} 
           alt={item.name} 
-          className={`w-full h-full object-cover transition-opacity duration-700 ${isGenerated ? 'opacity-100' : 'opacity-95'}`}
+          onLoad={() => setImageLoaded(true)}
+          className={`w-full h-full object-cover transition-all duration-700 group-hover:scale-110 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+          onError={(e) => {
+            // If Drive link is blocked or fails, try the lh3 direct link or fallback to Unsplash
+            if (imgSrc.includes('drive.google.com')) {
+               const fileId = imgSrc.split('id=')[1];
+               if (fileId) {
+                  setImgSrc(`https://lh3.googleusercontent.com/d/${fileId}`);
+                  return;
+               }
+            }
+            setImgSrc(`https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80`);
+          }}
         />
-        {/* Loading overlay/Sparkle to indicate AI magic if needed, but keeping it subtle is better */}
         {isGenerated && (
           <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-black/50 backdrop-blur-md rounded text-[8px] font-bold text-white uppercase tracking-wider flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
@@ -64,9 +79,11 @@ const MenuCard: React.FC<{ item: Dish; onAdd: (dish: Dish) => void }> = ({ item,
         </button>
       </div>
       
-      {/* Content Section */}
       <div className="p-3 flex-1 flex flex-col justify-between">
         <div>
+          <div className="flex items-center gap-1.5 mb-1">
+             {item.isBestseller && <span className="text-[10px] font-bold text-brand-gold uppercase tracking-tighter">Bestseller</span>}
+          </div>
           <h3 className="font-serif font-bold text-gray-900 text-[16px] leading-tight mb-3 line-clamp-2 min-h-[40px]">{item.name}</h3>
         </div>
         
@@ -104,8 +121,6 @@ const Menu: React.FC<MenuProps> = ({ onAddToCart, onOpenChat }) => {
 
   return (
     <div className="pt-20 pb-24 px-4 bg-[#F8F9FB] min-h-screen font-sans">
-      
-      {/* Search Bar */}
       <div className="flex items-center gap-3 mb-6">
         <div className="flex-1 relative">
           <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -130,7 +145,6 @@ const Menu: React.FC<MenuProps> = ({ onAddToCart, onOpenChat }) => {
         </button>
       </div>
 
-      {/* Categories */}
       <div className="mb-8 overflow-x-auto no-scrollbar">
         <div className="flex gap-2.5">
           {Object.values(Category).map(cat => (
@@ -149,7 +163,6 @@ const Menu: React.FC<MenuProps> = ({ onAddToCart, onOpenChat }) => {
         </div>
       </div>
 
-      {/* Header */}
       <div className="flex justify-between items-end mb-5">
         <div>
           <h2 className="text-3xl font-serif font-bold text-gray-900">Our Menu</h2>
@@ -160,14 +173,12 @@ const Menu: React.FC<MenuProps> = ({ onAddToCart, onOpenChat }) => {
         </span>
       </div>
 
-      {/* Grid - Exact 2 column structure */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {filteredItems.map(item => (
           <MenuCard key={item.id} item={item} onAdd={onAddToCart} />
         ))}
       </div>
 
-      {/* Floating AI Waiter Button */}
       <div className="fixed bottom-6 right-6 z-20">
         <button 
           onClick={onOpenChat}
@@ -185,7 +196,6 @@ const Menu: React.FC<MenuProps> = ({ onAddToCart, onOpenChat }) => {
           </div>
         </button>
       </div>
-
     </div>
   );
 };

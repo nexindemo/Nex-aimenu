@@ -1,5 +1,7 @@
 {
   "name": "NexSpice Court - Smart Dining",
-  "description": "An AI-powered smart dining experience featuring an interactive menu and a Gemini-powered AI waiter.",
-  "requestFramePermissions": []
+  "description": "An AI-powered smart dining experience featuring an interactive menu and a Gemini-powered AI waiter with Live Voice support.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }
