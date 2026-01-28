@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { CartItem } from '../types';
 
@@ -75,8 +76,8 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose, items, onRem
                       <div className="flex-1 flex flex-col justify-center">
                         <h4 className="font-semibold text-sm line-clamp-1">{item.name}</h4>
                         <div className="flex justify-between items-center mt-1">
-                          <p className="text-xs text-gray-500 font-medium">₹{item.price} x {item.quantity}</p>
-                          <p className="text-sm font-bold">₹{item.price * item.quantity}</p>
+                          <p className="text-xs text-gray-500 font-medium">${item.price.toFixed(2)} x {item.quantity}</p>
+                          <p className="text-sm font-bold">${(item.price * item.quantity).toFixed(2)}</p>
                         </div>
                       </div>
                       <button onClick={() => onRemove(item.id)} className="text-gray-400 hover:text-red-500 p-1.5 rounded-full hover:bg-red-50 transition self-center">
@@ -91,7 +92,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose, items, onRem
             <div className="border-t pt-4 mt-4">
               <div className="flex justify-between items-center mb-4">
                 <span className="font-semibold text-gray-600">Total</span>
-                <span className="font-bold text-xl">₹{total}</span>
+                <span className="font-bold text-xl">${total.toFixed(2)}</span>
               </div>
               <button 
                 onClick={handleCheckout}

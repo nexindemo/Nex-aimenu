@@ -90,7 +90,7 @@ const MenuCard: React.FC<{ item: Dish; onAdd: (dish: Dish) => void }> = ({ item,
         <div className="flex items-center justify-between mt-1">
           <div className="flex items-center gap-2">
               {item.diet === DietType.VEG ? <VegIcon /> : <NonVegIcon />}
-              <span className="font-bold text-gray-900 text-sm">₹{item.price}</span>
+              <span className="font-bold text-gray-900 text-sm">${item.price.toFixed(2)}</span>
           </div>
           
           <button 
